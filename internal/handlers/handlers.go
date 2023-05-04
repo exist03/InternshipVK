@@ -15,12 +15,14 @@ import (
 var (
 	InputSG            = fsm.NewStateGroup("reg")
 	InputServiceState  = InputSG.New("inputService")
-	InputLoginState    = InputSG.New("age")
-	InputPasswordState = InputSG.New("hobby")
+	InputLoginState    = InputSG.New("login")
+	InputPasswordState = InputSG.New("password")
 	InputConfirmState  = InputSG.New("confirm")
 )
 
 func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
+	initDelHandlers(db, manager)
+	initGetHandlers(db, manager)
 	bot.Handle("/start", onStart)
 	manager.Bind("/set", fsm.DefaultState, onStartRegister(keyboards.CancelBtn))
 	manager.Bind("/cancel", fsm.AnyState, OnCancelForm(keyboards.SetBtn))
@@ -53,9 +55,8 @@ func onStart(c tele.Context) error {
 }
 
 func onStartRegister(cancelBtn tele.Btn) fsm.Handler {
-	menu := &tele.ReplyMarkup{}
+	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
 	menu.Reply(menu.Row(cancelBtn))
-	menu.ResizeKeyboard = true
 	return func(c tele.Context, state fsm.FSMContext) error {
 		state.Set(InputServiceState)
 		return c.Send("Введите название сервиса", menu)
@@ -121,9 +122,8 @@ func OnInputConfirm(c tele.Context, state fsm.FSMContext) error {
 }
 
 func OnCancelForm(regBtn tele.Btn) fsm.Handler {
-	menu := &tele.ReplyMarkup{}
+	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
 	menu.Reply(menu.Row(regBtn))
-	menu.ResizeKeyboard = true
 
 	return func(c tele.Context, state fsm.FSMContext) error {
 		go state.Finish(true)
