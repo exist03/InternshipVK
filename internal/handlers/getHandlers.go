@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"fsm/internal/keyboards"
+	"fsm/pkg/models/mysql"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 )
@@ -15,7 +17,7 @@ func initGetHandlers(db *sql.DB, manager *fsm.Manager) {
 	manager.Bind("/get", fsm.DefaultState, onStartGet(keyboards.CancelBtn))
 	manager.Bind(&keyboards.GetBtn, fsm.DefaultState, onStartGet(keyboards.CancelBtn))
 
-	manager.Bind(tele.OnText, InputGetServiceState, onStartGet(keyboards.CancelBtn))
+	manager.Bind(tele.OnText, InputGetServiceState, getRecord(db))
 }
 
 func onStartGet(cancelBtn tele.Btn) fsm.Handler {
@@ -26,10 +28,16 @@ func onStartGet(cancelBtn tele.Btn) fsm.Handler {
 		return c.Send("Введите название сервиса", menu)
 	}
 }
-func getRecord() fsm.Handler {
+func getRecord(db *sql.DB) fsm.Handler {
 	return func(c tele.Context, state fsm.FSMContext) error {
 		defer state.Set(fsm.DefaultState)
 		username := c.Sender().Username
 		service := c.Text()
+		formModel := mysql.FormModel{DB: db}
+		login, password := formModel.Get(username, service)
+		if login == "" {
+			return c.Send("Что-то случилось. Повторите попытку позднее")
+		}
+		return c.Send(fmt.Sprintf("Логин: %s\nПароль: %s", login, password))
 	}
 }

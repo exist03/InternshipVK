@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"fsm/internal/keyboards"
+	"fsm/pkg/models/mysql"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 	"log"
@@ -40,7 +40,7 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 	manager.Bind(tele.OnText, InputServiceState, onInputServiceRegister)
 	manager.Bind(tele.OnText, InputLoginState, onInputLogin)
 	manager.Bind(tele.OnText, InputPasswordState, onInputPassword(keyboards.ConfirmBtn, keyboards.ResetFormBtn, keyboards.CancelInlineBtn))
-	manager.Bind(&keyboards.ConfirmBtn, InputConfirmState, OnInputConfirm, EditFormMessage("Now check y", "Y"))
+	manager.Bind(&keyboards.ConfirmBtn, InputConfirmState, OnInputConfirm(db), EditFormMessage("Now check y", "Y"))
 	manager.Bind(&keyboards.ResetFormBtn, InputConfirmState, OnInputResetForm, EditFormMessage("Now check your", "Your old"))
 	manager.Bind(&keyboards.CancelInlineBtn, InputConfirmState, OnCancelForm(keyboards.SetBtn), DeleteAfterHandler)
 }
@@ -89,36 +89,41 @@ func onInputPassword(confirmBtn, resetBtn, cancelBtn tele.Btn) fsm.Handler {
 	return func(c tele.Context, state fsm.FSMContext) error {
 		go state.Update("password", c.Message().Text)
 		go state.Set(InputConfirmState)
-		senderName := state.MustGet("inputService")
-		senderAge := state.MustGet("age")
+		service := state.MustGet("inputService")
+		login := state.MustGet("login")
 		c.Delete()
 		return c.Send(fmt.Sprintf(
 			"Проверьте правильность:\n"+
-				"Сервис: %q\n"+
-				"Логин: %d\n"+
-				"Пароль: %q\n",
-			senderName,
-			senderAge,
+				"Сервис: %s\n"+
+				"Логин: %s\n"+
+				"Пароль: %s\n",
+			service,
+			login,
 			c.Message().Text,
 		), m)
 	}
 }
 
-func OnInputConfirm(c tele.Context, state fsm.FSMContext) error {
-	defer state.Finish(true)
+func OnInputConfirm(db *sql.DB) fsm.Handler {
+	return func(c tele.Context, state fsm.FSMContext) error {
+		defer state.Finish(true)
+		service := state.MustGet("inputService")
+		login := state.MustGet("login")
+		password := state.MustGet("password")
+		formModel := mysql.FormModel{DB: db}
+		formModel.Insert(c.Sender().Username, service, login, password)
+		return c.Send("Запись сохраненна", tele.RemoveKeyboard)
+	}
 
-	senderName := state.MustGet("inputService")
-	senderAge := state.MustGet("login")
-	senderHobby := state.MustGet("password")
-
-	data, _ := json.Marshal(map[string]interface{}{
-		"inputService": senderName,
-		"login":        senderAge,
-		"password":     senderHobby,
-	})
-	log.Printf("new form: %s", data)
+	//if NoSQL use this
+	//data, _ := json.Marshal(map[string]interface{}{
+	//	"inputService": service,
+	//	"login":        login,
+	//	"password":     password,
+	//})
+	//log.Printf("new form: %s", data)
 	//username := "@" + c.Sender().Username + " " // whitespace for formatting
-	return c.Send("Form accepted", tele.RemoveKeyboard)
+
 }
 
 func OnCancelForm(regBtn tele.Btn) fsm.Handler {

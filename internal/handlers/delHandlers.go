@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"fsm/internal/keyboards"
+	"fsm/pkg/models/mysql"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
+	"log"
 )
 
 var (
@@ -15,7 +17,7 @@ func initDelHandlers(db *sql.DB, manager *fsm.Manager) {
 	manager.Bind("/del", fsm.DefaultState, onStartDelete(keyboards.CancelBtn))
 	manager.Bind(&keyboards.DelBtn, fsm.DefaultState, onStartDelete(keyboards.CancelBtn))
 
-	manager.Bind(tele.OnText, InputDeleteServiceState, onStartGet(keyboards.CancelBtn))
+	manager.Bind(tele.OnText, InputDeleteServiceState, delRecord(db))
 }
 
 func onStartDelete(cancelBtn tele.Btn) fsm.Handler {
@@ -27,10 +29,17 @@ func onStartDelete(cancelBtn tele.Btn) fsm.Handler {
 	}
 }
 
-func delRecord() fsm.Handler {
+func delRecord(db *sql.DB) fsm.Handler {
 	return func(c tele.Context, state fsm.FSMContext) error {
 		defer state.Set(fsm.DefaultState)
 		username := c.Sender().Username
 		service := c.Text()
+		formModel := mysql.FormModel{DB: db}
+		err := formModel.Delete(username, service)
+		if err != nil {
+			log.Println(err)
+			return c.Send("Что-то случилось. Повторите попытку позднее")
+		}
+		return c.Send("Запись удалена")
 	}
 }
