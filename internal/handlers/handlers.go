@@ -25,7 +25,7 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 	initGetHandlers(db, manager)
 	bot.Handle("/start", onStart)
 	manager.Bind("/set", fsm.DefaultState, onStartRegister(keyboards.CancelBtn))
-	manager.Bind("/cancel", fsm.AnyState, OnCancelForm(keyboards.SetBtn))
+	manager.Bind("/cancel", fsm.AnyState, onCancelForm(keyboards.SetBtn))
 
 	manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.FSMContext) error {
 		s := state.State()
@@ -34,15 +34,15 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 
 	// buttons
 	manager.Bind(&keyboards.SetBtn, fsm.DefaultState, onStartRegister(keyboards.CancelBtn))
-	manager.Bind(&keyboards.CancelBtn, fsm.AnyState, OnCancelForm(keyboards.SetBtn))
+	manager.Bind(&keyboards.CancelBtn, fsm.AnyState, onCancelForm(keyboards.SetBtn))
 
 	// form
 	manager.Bind(tele.OnText, InputServiceState, onInputServiceRegister)
 	manager.Bind(tele.OnText, InputLoginState, onInputLogin)
 	manager.Bind(tele.OnText, InputPasswordState, onInputPassword(keyboards.ConfirmBtn, keyboards.ResetFormBtn, keyboards.CancelInlineBtn))
-	manager.Bind(&keyboards.ConfirmBtn, InputConfirmState, OnInputConfirm(db), EditFormMessage("Now check y", "Y"))
-	manager.Bind(&keyboards.ResetFormBtn, InputConfirmState, OnInputResetForm, EditFormMessage("Now check your", "Your old"))
-	manager.Bind(&keyboards.CancelInlineBtn, InputConfirmState, OnCancelForm(keyboards.SetBtn), DeleteAfterHandler)
+	manager.Bind(&keyboards.ConfirmBtn, InputConfirmState, onInputConfirm(db), deleteAfterHandler)
+	manager.Bind(&keyboards.ResetFormBtn, InputConfirmState, onInputResetForm, deleteAfterHandler)
+	manager.Bind(&keyboards.CancelInlineBtn, InputConfirmState, onCancelForm(keyboards.SetBtn), deleteAfterHandler)
 }
 
 func onStart(c tele.Context) error {
@@ -104,7 +104,7 @@ func onInputPassword(confirmBtn, resetBtn, cancelBtn tele.Btn) fsm.Handler {
 	}
 }
 
-func OnInputConfirm(db *sql.DB) fsm.Handler {
+func onInputConfirm(db *sql.DB) fsm.Handler {
 	return func(c tele.Context, state fsm.FSMContext) error {
 		defer state.Finish(true)
 		service := state.MustGet("inputService")
@@ -126,7 +126,7 @@ func OnInputConfirm(db *sql.DB) fsm.Handler {
 
 }
 
-func OnCancelForm(regBtn tele.Btn) fsm.Handler {
+func onCancelForm(regBtn tele.Btn) fsm.Handler {
 	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
 	menu.Reply(menu.Row(regBtn))
 
@@ -136,7 +136,7 @@ func OnCancelForm(regBtn tele.Btn) fsm.Handler {
 	}
 }
 
-func OnInputResetForm(c tele.Context, state fsm.FSMContext) error {
+func onInputResetForm(c tele.Context, state fsm.FSMContext) error {
 	go state.Set(InputServiceState)
 	c.Send("Хорошо! Начнем сначала.")
 	return c.Send("Введите название сервиса")
@@ -166,7 +166,7 @@ func EditFormMessage(old, new string) tele.MiddlewareFunc {
 	}
 }
 
-func DeleteAfterHandler(next tele.HandlerFunc) tele.HandlerFunc {
+func deleteAfterHandler(next tele.HandlerFunc) tele.HandlerFunc {
 	return func(c tele.Context) error {
 		defer func(c tele.Context) {
 			if err := c.Delete(); err != nil {

@@ -10,14 +10,15 @@ import (
 )
 
 var (
-	InputGetServiceState = InputSG.New("InputGetServiceState")
+	InputGetServiceState   = InputSG.New("InputGetServiceState")
+	ConfirmGetServiceState = InputSG.New("ConfirmGetServiceState")
 )
 
 func initGetHandlers(db *sql.DB, manager *fsm.Manager) {
 	manager.Bind("/get", fsm.DefaultState, onStartGet(keyboards.CancelBtn))
 	manager.Bind(&keyboards.GetBtn, fsm.DefaultState, onStartGet(keyboards.CancelBtn))
 
-	manager.Bind(tele.OnText, InputGetServiceState, getRecord(db))
+	manager.Bind(tele.OnText, InputGetServiceState, getRecord(keyboards.ConfirmBtn, db))
 }
 
 func onStartGet(cancelBtn tele.Btn) fsm.Handler {
@@ -28,7 +29,11 @@ func onStartGet(cancelBtn tele.Btn) fsm.Handler {
 		return c.Send("Введите название сервиса", menu)
 	}
 }
-func getRecord(db *sql.DB) fsm.Handler {
+func getRecord(confirmBtn tele.Btn, db *sql.DB) fsm.Handler {
+	m := &tele.ReplyMarkup{}
+	m.Inline(
+		m.Row(confirmBtn),
+	)
 	return func(c tele.Context, state fsm.FSMContext) error {
 		defer state.Set(fsm.DefaultState)
 		username := c.Sender().Username
@@ -38,6 +43,31 @@ func getRecord(db *sql.DB) fsm.Handler {
 		if login == "" {
 			return c.Send("Что-то случилось. Повторите попытку позднее")
 		}
-		return c.Send(fmt.Sprintf("Логин: %s\nПароль: %s", login, password))
+		return c.Send(fmt.Sprintf("Логин: %s\nПароль: %s", login, password), m)
 	}
 }
+
+//func onInputPassword(confirmBtn, resetBtn, cancelBtn tele.Btn) fsm.Handler {
+//	m := &tele.ReplyMarkup{}
+//	m.Inline(
+//		m.Row(confirmBtn),
+//		m.Row(resetBtn, cancelBtn),
+//	)
+//
+//	return func(c tele.Context, state fsm.FSMContext) error {
+//		go state.Update("password", c.Message().Text)
+//		go state.Set(InputConfirmState)
+//		service := state.MustGet("inputService")
+//		login := state.MustGet("login")
+//		c.Delete()
+//		return c.Send(fmt.Sprintf(
+//			"Проверьте правильность:\n"+
+//				"Сервис: %s\n"+
+//				"Логин: %s\n"+
+//				"Пароль: %s\n",
+//			service,
+//			login,
+//			c.Message().Text,
+//		), m)
+//	}
+//}
