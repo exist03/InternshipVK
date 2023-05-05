@@ -25,7 +25,7 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 	initGetHandlers(db, manager)
 	bot.Handle("/start", onStart)
 	manager.Bind("/set", fsm.DefaultState, onStartRegister(keyboards.CancelBtn))
-	manager.Bind("/cancel", fsm.AnyState, onCancelForm(keyboards.SetBtn))
+	manager.Bind("/cancel", fsm.AnyState, onCancelForm())
 
 	manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.FSMContext) error {
 		s := state.State()
@@ -34,7 +34,7 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 
 	// buttons
 	manager.Bind(&keyboards.SetBtn, fsm.DefaultState, onStartRegister(keyboards.CancelBtn))
-	manager.Bind(&keyboards.CancelBtn, fsm.AnyState, onCancelForm(keyboards.SetBtn))
+	manager.Bind(&keyboards.CancelBtn, fsm.AnyState, onCancelForm())
 
 	// form
 	manager.Bind(tele.OnText, InputServiceState, onInputServiceRegister)
@@ -42,7 +42,7 @@ func InitHandlers(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
 	manager.Bind(tele.OnText, InputPasswordState, onInputPassword(keyboards.ConfirmBtn, keyboards.ResetFormBtn, keyboards.CancelInlineBtn))
 	manager.Bind(&keyboards.ConfirmBtn, InputConfirmState, onInputConfirm(db), deleteAfterHandler)
 	manager.Bind(&keyboards.ResetFormBtn, InputConfirmState, onInputResetForm, deleteAfterHandler)
-	manager.Bind(&keyboards.CancelInlineBtn, InputConfirmState, onCancelForm(keyboards.SetBtn), deleteAfterHandler)
+	manager.Bind(&keyboards.CancelInlineBtn, InputConfirmState, onCancelForm(), deleteAfterHandler)
 }
 
 func onStart(c tele.Context) error {
@@ -50,7 +50,8 @@ func onStart(c tele.Context) error {
 	return c.Send(
 		"Добро пожаловать в бот для ваших паролей\n"+
 			"Отправьте /set чтобы добавить сервис\n"+
-			"Отправьте /cancel чтобы омтенить ввод", keyboards.OnStartKB())
+			"Отправьте /cancel чтобы омтенить действие\n"+
+			"Отправьте /get чтобы получить запись", keyboards.OnStartKB())
 
 }
 
@@ -67,7 +68,7 @@ func onInputServiceRegister(c tele.Context, state fsm.FSMContext) error {
 	service := c.Message().Text
 	go state.Update("inputService", service)
 	go state.Set(InputLoginState)
-	return c.Send(fmt.Sprintf("Супер, %s. Теперь введи логин", service))
+	return c.Send(fmt.Sprintf("Супер. Теперь введи логин"))
 }
 
 func onInputLogin(c tele.Context, state fsm.FSMContext) error {
@@ -112,7 +113,7 @@ func onInputConfirm(db *sql.DB) fsm.Handler {
 		password := state.MustGet("password")
 		formModel := mysql.FormModel{DB: db}
 		formModel.Insert(c.Sender().Username, service, login, password)
-		return c.Send("Запись сохраненна", tele.RemoveKeyboard)
+		return c.Send("Запись сохраненна", keyboards.OnStartKB())
 	}
 
 	//if NoSQL use this
@@ -126,13 +127,10 @@ func onInputConfirm(db *sql.DB) fsm.Handler {
 
 }
 
-func onCancelForm(regBtn tele.Btn) fsm.Handler {
-	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
-	menu.Reply(menu.Row(regBtn))
-
+func onCancelForm() fsm.Handler {
 	return func(c tele.Context, state fsm.FSMContext) error {
 		go state.Finish(true)
-		return c.Send("Данные удалены", menu)
+		return c.Send("Данные удалены", keyboards.OnStartKB())
 	}
 }
 
