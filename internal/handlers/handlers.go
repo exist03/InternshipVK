@@ -8,8 +8,6 @@ import (
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 	"log"
-	"strings"
-	"unicode/utf8"
 )
 
 var (
@@ -138,30 +136,6 @@ func onInputResetForm(c tele.Context, state fsm.FSMContext) error {
 	go state.Set(InputServiceState)
 	c.Send("Хорошо! Начнем сначала.")
 	return c.Send("Введите название сервиса")
-}
-
-func EditFormMessage(old, new string) tele.MiddlewareFunc {
-	return func(next tele.HandlerFunc) tele.HandlerFunc {
-		return func(c tele.Context) error {
-			strOffset := utf8.RuneCountInString(old)
-			if nLen := utf8.RuneCountInString(new); nLen > 1 {
-				strOffset -= nLen - 1
-			}
-
-			entities := make(tele.Entities, len(c.Message().Entities))
-			for i, entity := range c.Message().Entities {
-				entity.Offset -= strOffset
-				entities[i] = entity
-			}
-			defer func() {
-				err := c.EditOrSend(strings.Replace(c.Message().Text, old, new, 1), entities)
-				if err != nil {
-					c.Bot().OnError(err, c)
-				}
-			}()
-			return next(c)
-		}
-	}
 }
 
 func deleteAfterHandler(next tele.HandlerFunc) tele.HandlerFunc {

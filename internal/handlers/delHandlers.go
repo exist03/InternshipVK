@@ -40,6 +40,6 @@ func delRecord(db *sql.DB) fsm.Handler {
 			log.Println(err)
 			return c.Send("Что-то случилось. Повторите попытку позднее")
 		}
-		return c.Send("Запись удалена")
+		return c.Send("Запись удалена", keyboards.OnStartKB())
 	}
 }

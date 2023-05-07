@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	InputGetServiceState   = InputSG.New("InputGetServiceState")
-	ConfirmGetServiceState = InputSG.New("ConfirmGetServiceState")
+	InputGetServiceState = InputSG.New("InputGetServiceState")
 )
 
 func initGetHandlers(db *sql.DB, manager *fsm.Manager) {
@@ -46,28 +45,3 @@ func getRecord(confirmBtn tele.Btn, db *sql.DB) fsm.Handler {
 		return c.Send(fmt.Sprintf("Логин: %s\nПароль: %s", login, password), m)
 	}
 }
-
-//func onInputPassword(confirmBtn, resetBtn, cancelBtn tele.Btn) fsm.Handler {
-//	m := &tele.ReplyMarkup{}
-//	m.Inline(
-//		m.Row(confirmBtn),
-//		m.Row(resetBtn, cancelBtn),
-//	)
-//
-//	return func(c tele.Context, state fsm.FSMContext) error {
-//		go state.Update("password", c.Message().Text)
-//		go state.Set(InputConfirmState)
-//		service := state.MustGet("inputService")
-//		login := state.MustGet("login")
-//		c.Delete()
-//		return c.Send(fmt.Sprintf(
-//			"Проверьте правильность:\n"+
-//				"Сервис: %s\n"+
-//				"Логин: %s\n"+
-//				"Пароль: %s\n",
-//			service,
-//			login,
-//			c.Message().Text,
-//		), m)
-//	}
-//}

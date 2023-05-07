@@ -4,12 +4,15 @@ import (
 	"fsm/internal/handlers"
 	"fsm/pkg/DB"
 	"github.com/joho/godotenv"
+	"os"
+
+	//	"github.com/joho/godotenv"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	"github.com/vitaliy-ukiru/fsm-telebot/storages/memory"
 	tele "gopkg.in/telebot.v3"
 	"gopkg.in/telebot.v3/middleware"
 	"log"
-	"os"
+	//	"os"
 	"time"
 )
 
