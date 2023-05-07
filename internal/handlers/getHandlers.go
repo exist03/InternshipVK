@@ -40,7 +40,7 @@ func getRecord(confirmBtn tele.Btn, db *sql.DB) fsm.Handler {
 		formModel := mysql.FormModel{DB: db}
 		login, password := formModel.Get(username, service)
 		if login == "" {
-			return c.Send("Что-то случилось. Повторите попытку позднее")
+			return c.Send("Что-то случилось. Повторите попытку позднее", keyboards.OnStartKB())
 		}
 		return c.Send(fmt.Sprintf("Логин: %s\nПароль: %s", login, password), m)
 	}
