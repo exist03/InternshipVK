@@ -18,3 +18,15 @@ func OnStartKB() *tele.ReplyMarkup {
 		menu.Row(DelBtn))
 	return menu
 }
+
+func ServersKB(services []string) *tele.ReplyMarkup {
+	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
+	var rows []tele.Row
+	for _, v := range services {
+		rows = append(rows, menu.Row(tele.Btn{
+			Text: v,
+		}))
+	}
+	menu.Reply(rows...)
+	return menu
+}

@@ -9,9 +9,7 @@ import (
 	"log"
 )
 
-var (
-	InputDeleteServiceState = InputSG.New("InputDeleteServiceState")
-)
+var InputDeleteServiceState = InputSG.New("InputDeleteServiceState")
 
 func initDelHandlers(db *sql.DB, manager *fsm.Manager) {
 	manager.Bind("/del", fsm.DefaultState, onStartDelete(keyboards.CancelBtn))

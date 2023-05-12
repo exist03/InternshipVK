@@ -39,3 +39,22 @@ func (m *FormModel) Get(username, service string) (string, string) {
 	}
 	return login, password
 }
+
+func (m *FormModel) GetList(userID string) ([]string, error) {
+	var services []string
+	stmt := `SELECT Service FROM Services WHERE username=?`
+	rows, err := m.DB.Query(stmt, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var service string
+	for rows.Next() {
+		err := rows.Scan(&service)
+		if err != nil {
+			log.Print(err)
+		}
+		services = append(services, service)
+	}
+	return services, nil
+}
