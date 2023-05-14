@@ -44,7 +44,6 @@ func getRecord(confirmBtn tele.Btn, db *sql.DB) fsm.Handler {
 		m.Row(confirmBtn),
 	)
 	return func(c tele.Context, state fsm.FSMContext) error {
-		defer state.Set(fsm.DefaultState)
 		username := c.Sender().Username
 		service := c.Text()
 		formModel := mysql.FormModel{DB: db}

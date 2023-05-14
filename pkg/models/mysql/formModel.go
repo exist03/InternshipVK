@@ -56,5 +56,6 @@ func (m *FormModel) GetList(userID string) ([]string, error) {
 		}
 		services = append(services, service)
 	}
+	services = append(services, "/cancel")
 	return services, nil
 }
