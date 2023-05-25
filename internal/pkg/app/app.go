@@ -1,22 +1,40 @@
-package main
+package app
 
 import (
-	"fsm/internal/handlers"
+	"fsm/internal/app/handlers"
+	"fsm/internal/app/repository"
+	"fsm/internal/app/service"
 	"fsm/pkg/DB"
 	"github.com/joho/godotenv"
-	"os"
-
-	//	"github.com/joho/godotenv"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	"github.com/vitaliy-ukiru/fsm-telebot/storages/memory"
 	tele "gopkg.in/telebot.v3"
 	"gopkg.in/telebot.v3/middleware"
 	"log"
-	//	"os"
+	"os"
 	"time"
 )
 
-func main() {
+type App struct {
+	handler    *handlers.Handler
+	serv       *service.Service
+	repository *repository.Repository
+}
+
+func New() (*App, error) {
+	db, err := DB.OpenDB("quest:quest@/VK")
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	app := &App{}
+	app.serv = service.New()
+	app.repository = repository.New(db)
+	app.handler = handlers.New(app.serv, app.repository)
+	return app, nil
+}
+
+func (a *App) Run() error {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
@@ -33,13 +51,8 @@ func main() {
 	storage := memory.NewStorage()
 	defer storage.Close()
 	manager := fsm.NewManager(bGroup, memory.NewStorage())
-	db, err := DB.OpenDB("quest:quest@/VK")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("db is open")
-	defer db.Close()
-	handlers.InitHandlers(bGroup, db, manager)
+	a.handler.Init(bGroup, a.repository.DB, manager)
 	log.Println("Handlers configured")
 	bot.Start()
+	return nil
 }
