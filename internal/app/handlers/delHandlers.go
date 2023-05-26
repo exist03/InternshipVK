@@ -10,13 +10,7 @@ import (
 	"log"
 )
 
-<<<<<<< HEAD:internal/app/handlers/delHandlers.go
 func (h *Handler) initDelHandlers(db *sql.DB, manager *fsm.Manager) {
-=======
-var InputDeleteServiceState = InputSG.New("InputDeleteServiceState")
-
-func initDelHandlers(db *sql.DB, manager *fsm.Manager) {
->>>>>>> main:internal/handlers/delHandlers.go
 	manager.Bind("/del", fsm.DefaultState, onStartDelete(keyboards.CancelBtn))
 	manager.Bind(&keyboards.DelBtn, fsm.DefaultState, onStartDelete(keyboards.CancelBtn))
 
