@@ -20,8 +20,8 @@ func New(serv *service.Service, repo *repository.Repository) *Handler {
 		repo: repo}
 }
 func (h *Handler) Init(bot *tele.Group, db *sql.DB, manager *fsm.Manager) {
-	h.initDelHandlers(db, manager)
-	h.initGetHandlers(db, manager)
+	h.initDelHandlers(manager)
+	h.initGetHandlers(manager)
 	bot.Handle("/start", onStart)
 	manager.Bind("/set", fsm.DefaultState, h.serv.OnStartRegister(keyboards.CancelBtn))
 	manager.Bind("/cancel", fsm.AnyState, h.serv.OnCancelForm())
@@ -52,4 +52,27 @@ func onStart(c tele.Context) error {
 			"Отправьте /cancel чтобы омтенить действие\n"+
 			"Отправьте /get чтобы получить запись", keyboards.OnStartKB())
 
+}
+
+func servList(repo *repository.Repository, option string) fsm.Handler {
+	return func(c tele.Context, state fsm.FSMContext) error {
+		username := c.Sender().Username
+		servList, err := repo.GetList(username)
+		if err != nil {
+			log.Println(err)
+			state.Set(fsm.DefaultState)
+			return c.Send("Что-то случилось. Повторите попытку позднее", keyboards.OnStartKB())
+		}
+		if len(servList) == 1 {
+			state.Set(fsm.DefaultState)
+			return c.Send("У вас еще нет ни одной записи", keyboards.OnStartKB())
+		}
+		switch option {
+		case "get":
+			state.Set(service.InputGetServiceState)
+		case "del":
+			state.Set(service.InputDeleteServiceState)
+		}
+		return c.Send("Выберите сервис", keyboards.ServersKB(servList))
+	}
 }

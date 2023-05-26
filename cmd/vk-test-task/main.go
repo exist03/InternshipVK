@@ -1,6 +1,6 @@
 package main
 
-import app "fsm/internal/pkg/app"
+import "fsm/internal/pkg/app"
 
 func main() {
 	a, err := app.New()
