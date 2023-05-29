@@ -3,7 +3,7 @@ package handlers
 import (
 	"fsm/internal/app/repository"
 	"fsm/internal/app/service"
-	"fsm/internal/keyboards"
+	"fsm/internal/pkg/keyboards"
 	fsm "github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 	"log"
